@@ -1,0 +1,89 @@
+{
+  "tool": "board-coverage-check",
+  "version": 1,
+  "fetchedAt": "2026-11-10T08:00:00.000Z",
+  "tenancy": "55555555-5555-4555-8555-555555555555",
+  "boardsInTenancy": 2,
+  "allowance": {
+    "used": 4,
+    "limit": 5,
+    "plan": "panda"
+  },
+  "mode": "apps",
+  "apps": [
+    {
+      "storeId": "1000000001",
+      "label": "Example Meal Planner",
+      "role": null,
+      "sources": [
+        "file"
+      ],
+      "boards": [
+        {
+          "boardId": "66666666-6666-4666-8666-000000000001",
+          "boardName": "Meal planning rivals (example)",
+          "itemId": "77777777-7777-4777-8777-000000000001",
+          "note": "Main rival, watch the UGC hooks"
+        }
+      ],
+      "onBoards": 1,
+      "status": "single"
+    },
+    {
+      "storeId": "1000000002",
+      "label": "Example Recipe Box",
+      "role": null,
+      "sources": [
+        "file"
+      ],
+      "boards": [
+        {
+          "boardId": "66666666-6666-4666-8666-000000000001",
+          "boardName": "Meal planning rivals (example)",
+          "itemId": "77777777-7777-4777-8777-000000000002",
+          "note": null
+        }
+      ],
+      "onBoards": 1,
+      "status": "single"
+    },
+    {
+      "storeId": "1000000003",
+      "label": "Example Grocery List",
+      "role": null,
+      "sources": [
+        "file"
+      ],
+      "boards": [],
+      "onBoards": 0,
+      "status": "missing"
+    },
+    {
+      "storeId": "1000000004",
+      "label": "Example Macro Coach",
+      "role": null,
+      "sources": [
+        "file"
+      ],
+      "boards": [
+        {
+          "boardId": "66666666-6666-4666-8666-000000000002",
+          "boardName": "Pantry apps (example)",
+          "itemId": "77777777-7777-4777-8777-000000000005",
+          "note": null
+        }
+      ],
+      "onBoards": 1,
+      "status": "single"
+    }
+  ],
+  "summary": {
+    "checked": 4,
+    "onABoard": 3,
+    "missing": 1,
+    "onOneBoardOnly": 3,
+    "onSeveralBoards": 0,
+    "unexpected": [],
+    "freeSlots": 1
+  }
+}

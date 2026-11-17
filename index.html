@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Board coverage check: is every competitor app on your list on a PeekPanda board?</title>
+<meta name="description" content="Paste your competitor list and a PeekPanda board memberships read and see which apps are on no board (not tracked), which are on one board only, board names, item ids and notes, and what changed since last time. Runs in your browser.">
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; color: #1b1b1f; }
+  textarea { width: 100%; min-height: 110px; font: 13px ui-monospace, monospace; }
+  button { padding: .45rem .9rem; margin: .5rem .5rem .5rem 0; cursor: pointer; }
+  table { border-collapse: collapse; width: 100%; margin-top: .5rem; font-size: 13px; }
+  th, td { border-bottom: 1px solid #ddd; padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  .muted { color: #777; } .err { color: #cf222e; white-space: pre-wrap; }
+  .kpi { display: flex; flex-wrap: wrap; gap: .75rem; margin: .75rem 0; }
+  .kpi div { background: #f6f8fa; border-radius: 6px; padding: .4rem .8rem; min-width: 110px; } .kpi b { display: block; font-size: 20px; }
+  .st { font-size: 11px; padding: .05rem .4rem; border-radius: 4px; background: #eee; white-space: nowrap; }
+  .st.covered { background: #dcfce7; color: #166534; } .st.single { background: #fef3c7; color: #92400e; } .st.missing { background: #fee2e2; color: #991b1b; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; } @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  label { font-weight: 600; font-size: 14px; }
+  pre { background: #f6f8fa; padding: .75rem; overflow-x: auto; font-size: 13px; }
+  footer { margin-top: 2.5rem; font-size: 13px; color: #555; }
+  a { color: #0969da; }
+</style>
+</head>
+<body>
+<h1>Board coverage check</h1>
+<p>An app is tracked only while it sits on one of your boards. Paste the list of competitor apps you care about and the board memberships read for them, and this page shows which apps are on no board (so nothing is being collected for them), which are on one board only (one cleanup away from dropping out), and which boards hold the rest, with item ids and notes. Paste an earlier report too and it lists what changed. Nothing leaves your browser; this page never calls the API.</p>
+<div class="grid">
+  <div><label for="apps">Your apps</label><textarea id="apps" spellcheck="false" placeholder="One App Store id or apps.apple.com link per line, optional =Label, # comments"></textarea></div>
+  <div><label for="mem">Memberships read</label><textarea id="mem" spellcheck="false" placeholder='GET /v1/boards/memberships?storeIds=… response, an array of them, or the file the command-line version saves with --save'></textarea></div>
+  <div><label for="list">Board list (optional, for names and free slots)</label><textarea id="list" spellcheck="false" placeholder="GET /v1/boards response" style="min-height:70px"></textarea></div>
+  <div><label for="prev">Earlier report (optional)</label><textarea id="prev" spellcheck="false" placeholder="CLI --format json output or a --state file" style="min-height:70px"></textarea></div>
+</div>
+<div>
+  <button id="go">Check</button>
+  <button id="ex">Load example data</button>
+  <button id="csv" disabled>Download CSV</button>
+</div>
+<div id="err" class="err"></div>
+<div id="out"></div>
+
+<h2>Where to get the JSON</h2>
+<p>The input comes from <a href="https://peekpanda.com">PeekPanda</a>, an iOS competitor catalogue where every app has a case file of dated, stored evidence. One memberships read answers for up to 100 apps; it is one call from your plan's daily API and MCP allowance, and so is the board list:</p>
+<pre>curl --get 'https://api.peekpanda.com/v1/boards/memberships' \
+  --data-urlencode 'storeIds=493145008,570060128' \
+  --header "Authorization: Bearer $PEEKPANDA_TOKEN" \
+  --header 'x-genviral-tenancy: &lt;selector from /v1/workspaces&gt;'
+curl --get 'https://api.peekpanda.com/v1/boards' \
+  --header "Authorization: Bearer $PEEKPANDA_TOKEN" \
+  --header 'x-genviral-tenancy: &lt;selector from /v1/workspaces&gt;'</pre>
+<p>Over MCP the same reads are <code>boards</code> with actions <code>memberships</code> and <code>list</code>. The <a href="https://peekpanda.com/docs/board-memberships">board memberships reference</a> lists every field. The command-line version on GitHub splits long lists into batches of 100, reads your ASO apps too, keeps a weekly diff, fails a CI job when an app is on no board and posts to Slack or Discord.</p>
+<p class="muted">The read covers one tenancy (your personal space or one workspace). An app on no board here may still be tracked in another space you own. Free slots are the plan holder's allowance across every space they pay for.</p>
+
+<footer>Open source (MIT): <a href="https://github.com/fdarkaou/board-coverage-check">github.com/fdarkaou/board-coverage-check</a>. Example data is made up.</footer>
+
+<script type="module">
+import { parseAppList, toReport, diff, diffLines, toCsv } from './coverage.js';
+const $ = (id) => document.getElementById(id);
+const h = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const label = { missing: 'on no board', single: 'one board only', covered: 'several boards' };
+let report = null;
+
+function render() {
+  $('err').textContent = '';
+  try {
+    const mem = JSON.parse($('mem').value);
+    const listText = $('list').value.trim();
+    const list = listText ? JSON.parse(listText) : null;
+    const apps = parseAppList($('apps').value);
+    if (mem?.tool === 'board-coverage-check/raw' || mem?.tool === 'board-coverage-check') {
+      report = toReport(apps.length && mem.tool === 'board-coverage-check/raw' ? { ...mem, apps } : mem);
+    } else {
+      if (!apps.length) throw new Error('List your apps on the left: without them, apps on no board cannot show up.');
+      const parts = Array.isArray(mem) ? mem : [mem];
+      report = toReport({ tool: 'board-coverage-check/raw', fetchedAt: new Date().toISOString(), tenancy: null, list, aso: null, apps, ad: null, memberships: parts });
+    }
+    if (report.mode === 'ad') { $('out').innerHTML = `<p>${h(report.ad.platform)}:${h(report.ad.archiveId)} is ${report.ad.saved ? `saved on ${report.ad.boards.length} board(s): ${h(report.ad.boards.map((b) => b.boardName ?? b.boardId).join(', '))}` : 'not saved on any board'}.</p>`; $('csv').disabled = false; return; }
+    const s = report.summary, al = report.allowance;
+    const prevText = $('prev').value.trim();
+    const d = prevText ? diff(report, JSON.parse(prevText)) : null;
+    let html = `<div class="kpi"><div><b>${s.checked}</b>apps checked</div><div><b>${s.onABoard}</b>on a board</div><div><b>${s.missing}</b>on no board</div><div><b>${s.onOneBoardOnly}</b>one board only</div>${al ? `<div><b>${h(al.used)} / ${h(al.limit)}</b>tracked apps (${h(al.plan ?? 'plan')})</div>` : ''}</div>`;
+    if (d) { const lines = diffLines(d); html += `<h2>Since the last check</h2><ul>${(lines.length ? lines : ['No changes.']).map((l) => `<li>${h(l)}</li>`).join('')}</ul>`; }
+    if (s.missing && s.freeSlots != null) html += `<p>${s.freeSlots >= s.missing ? `The plan has ${s.freeSlots} free tracked-app slot(s), enough for the ${s.missing} app(s) on no board.` : `The plan has ${s.freeSlots} free tracked-app slot(s) and ${s.missing} app(s) are on no board, so adding all of them may answer 409 tracked_app_limit.`} An app already tracked in another space you pay for counts once.</p>`;
+    const order = { missing: 0, single: 1, covered: 2 };
+    const rows = [...report.apps].sort((a, b) => order[a.status] - order[b.status]);
+    html += `<table><tr><th>App</th><th>Store id</th><th>Status</th><th>Boards</th><th>Item ids</th><th>Notes</th></tr>${rows.map((a) => `<tr><td>${h(a.label ?? '')}</td><td>${h(a.storeId)}</td><td><span class="st ${a.status}">${label[a.status]}</span></td><td>${h(a.boards.map((b) => b.boardName ?? b.boardId).join(', '))}</td><td><code>${h(a.boards.map((b) => b.itemId ?? '').join(', '))}</code></td><td>${h(a.boards.map((b) => b.note).filter(Boolean).join('; '))}</td></tr>`).join('')}</table>`;
+    if (s.unexpected.length) html += `<p class="muted">Returned but not in your list: ${h(s.unexpected.join(', '))}.</p>`;
+    if (s.onOneBoardOnly) html += `<p class="muted">"One board only": removing that item stops tracking the app in this tenancy.</p>`;
+    $('out').innerHTML = html;
+    $('csv').disabled = false;
+  } catch (e) { $('err').textContent = e.message; }
+}
+$('go').onclick = render;
+$('ex').onclick = async () => {
+  const run = await (await fetch('examples/run.json')).json();
+  $('apps').value = await (await fetch('examples/competitors.txt')).text();
+  $('mem').value = JSON.stringify(run.memberships[0], null, 2);
+  $('list').value = JSON.stringify(run.list, null, 2);
+  $('prev').value = await (await fetch('examples/previous.json')).text();
+  render();
+};
+$('csv').onclick = () => {
+  const el = document.createElement('a');
+  el.href = URL.createObjectURL(new Blob([toCsv(report)], { type: 'text/csv' }));
+  el.download = 'board-coverage.csv'; el.click();
+};
+</script>
+</body>
+</html>

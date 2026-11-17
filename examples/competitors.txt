@@ -1,0 +1,6 @@
+# One App Store id or apps.apple.com link per line. "=Label" is optional. Made-up ids.
+1000000001=Example Meal Planner
+1000000002=Example Recipe Box
+https://apps.apple.com/us/app/example-grocery-list/id1000000003=Example Grocery List
+1000000004=Example Macro Coach  # watch: started running ads
+1000000005=Example Meal Kit

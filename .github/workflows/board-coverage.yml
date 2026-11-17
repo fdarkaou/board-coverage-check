@@ -1,0 +1,41 @@
+# Example: every Monday, check that each app in competitors.txt is on a PeekPanda board, and post changes to Slack or Discord.
+# Disabled until you set the repository variable ENABLE_BOARD_COVERAGE=true.
+# Secrets: PEEKPANDA_TOKEN (PeekPanda API key, required), BOARD_COVERAGE_WEBHOOK_URL (optional).
+# Variable (optional): PEEKPANDA_TENANCY = personal or a workspace id (see: node cli.js --workspaces). Setting it saves one call.
+# Calls per run: 1 workspaces read (none with PEEKPANDA_TENANCY) + 1 board list + 1 memberships read per 100 apps.
+# Peek allows 30 API and MCP calls a UTC day, Panda 1,000. Read-only: the job never adds or removes board items.
+# The job fails (exit code 2) when an app is on no board, so you get GitHub's failure mail too.
+name: board-coverage
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+jobs:
+  coverage:
+    if: vars.ENABLE_BOARD_COVERAGE == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/cache/restore@v4
+        with:
+          path: coverage-state.json
+          key: board-coverage-state-${{ github.run_id }}
+          restore-keys: board-coverage-state-
+      - name: board coverage
+        env:
+          PEEKPANDA_TOKEN: ${{ secrets.PEEKPANDA_TOKEN }}
+          PEEKPANDA_TENANCY: ${{ vars.PEEKPANDA_TENANCY }}
+          BOARD_COVERAGE_WEBHOOK_URL: ${{ secrets.BOARD_COVERAGE_WEBHOOK_URL }}
+        run: |
+          ARGS="--apps-file competitors.txt --state coverage-state.json --fail-on-missing"
+          if [ -n "$PEEKPANDA_TENANCY" ]; then ARGS="$ARGS --tenancy $PEEKPANDA_TENANCY"; fi
+          if [ -n "$BOARD_COVERAGE_WEBHOOK_URL" ]; then ARGS="$ARGS --webhook $BOARD_COVERAGE_WEBHOOK_URL"; fi
+          node cli.js $ARGS >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: coverage-state.json
+          key: board-coverage-state-${{ github.run_id }}

@@ -1,0 +1,108 @@
+{
+  "tool": "board-coverage-check/raw",
+  "fetchedAt": "2026-11-17T08:00:00.000Z",
+  "tenancy": "55555555-5555-4555-8555-555555555555",
+  "list": {
+    "data": [
+      {
+        "id": "66666666-6666-4666-8666-000000000001",
+        "name": "Meal planning rivals (example)",
+        "color": "#5cb427",
+        "scope": "workspace",
+        "workspaceId": "55555555-5555-4555-8555-555555555555",
+        "ownerUserId": "99999999-9999-4999-8999-999999999999",
+        "appCount": 3,
+        "adCount": 1,
+        "createdAt": "2026-09-06T00:00:00.000Z",
+        "updatedAt": "2026-11-13T00:00:00.000Z"
+      },
+      {
+        "id": "66666666-6666-4666-8666-000000000002",
+        "name": "Pantry apps (example)",
+        "color": "#2563eb",
+        "scope": "workspace",
+        "workspaceId": "55555555-5555-4555-8555-555555555555",
+        "ownerUserId": "99999999-9999-4999-8999-999999999999",
+        "appCount": 1,
+        "adCount": 0,
+        "createdAt": "2026-10-01T00:00:00.000Z",
+        "updatedAt": "2026-11-10T00:00:00.000Z"
+      }
+    ],
+    "limit": 100,
+    "trackedAppAllowance": {
+      "used": 4,
+      "limit": 5,
+      "plan": "panda"
+    }
+  },
+  "aso": null,
+  "apps": [
+    {
+      "storeId": "1000000001",
+      "label": "Example Meal Planner",
+      "sources": [
+        "file"
+      ]
+    },
+    {
+      "storeId": "1000000002",
+      "label": "Example Recipe Box",
+      "sources": [
+        "file"
+      ]
+    },
+    {
+      "storeId": "1000000003",
+      "label": "Example Grocery List",
+      "sources": [
+        "file"
+      ]
+    },
+    {
+      "storeId": "1000000004",
+      "label": "Example Macro Coach",
+      "sources": [
+        "file"
+      ]
+    },
+    {
+      "storeId": "1000000005",
+      "label": "Example Meal Kit",
+      "sources": [
+        "file"
+      ]
+    }
+  ],
+  "ad": null,
+  "memberships": [
+    {
+      "data": [
+        {
+          "boardId": "66666666-6666-4666-8666-000000000001",
+          "itemId": "77777777-7777-4777-8777-000000000001",
+          "storeId": "1000000001",
+          "note": "Main rival, watch the UGC hooks"
+        },
+        {
+          "boardId": "66666666-6666-4666-8666-000000000001",
+          "itemId": "77777777-7777-4777-8777-000000000002",
+          "storeId": "1000000002",
+          "note": null
+        },
+        {
+          "boardId": "66666666-6666-4666-8666-000000000002",
+          "itemId": "77777777-7777-4777-8777-000000000003",
+          "storeId": "1000000002",
+          "note": "Also a pantry app"
+        },
+        {
+          "boardId": "66666666-6666-4666-8666-000000000001",
+          "itemId": "77777777-7777-4777-8777-000000000004",
+          "storeId": "1000000003",
+          "note": null
+        }
+      ]
+    }
+  ]
+}
